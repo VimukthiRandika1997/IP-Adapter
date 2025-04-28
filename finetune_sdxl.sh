@@ -4,13 +4,19 @@
 # data.json => list of dict: [{"image_file": "1.png", "text": "A dog"}]
 # data_root_path => "data/images"
 
+# 01. Create required format using hf dataset
+export HF_TOKEN=""
+export HF_DATASET_NAME=""
+
+python3 create_data_from_hf_dataset.py $HF_TOKEN $HF_DATASET_NAME
+
 mkdir checkpoints
 pushd checkpoints
     wget https://huggingface.co/h94/IP-Adapter/resolve/main/sdxl_models/ip-adapter-plus_sdxl_vit-h.bin
 popd
 
 
-# Start training
+# 02. Start training
 accelerate launch --num_processes 1 --mixed_precision "fp16" \
   tutorial_train_sdxl.py \
   --pretrained_model_name_or_path="stabilityai/stable-diffusion-xl-base-1.0" \
