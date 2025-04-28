@@ -1,4 +1,5 @@
 import os
+import shutil
 import random
 import argparse
 from pathlib import Path
@@ -276,6 +277,14 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--checkpoints_total_limit",
+        type=int,
+        default=1,
+        help=(
+            "Total no.of checkpoints to be saved"
+        ),
+    )
+    parser.add_argument(
         "--mixed_precision",
         type=str,
         default=None,
@@ -472,6 +481,21 @@ def main():
                         epoch, step, load_data_time, time.perf_counter() - begin, avg_loss))
             
             global_step += 1
+
+            # _before_ saving state, check if this save would set us over the `checkpoints_total_limit`
+            if args.checkpoints_total_limit is not None:
+                checkpoints = os.listdir(args.output_dir)
+                checkpoints = [d for d in checkpoints if d.startswith("checkpoint")]
+                checkpoints = sorted(checkpoints, key=lambda x: int(x.split("-")[1]))
+
+                # before we save the new checkpoint, we need to have at _most_ `checkpoints_total_limit - 1` checkpoints
+                if len(checkpoints) >= args.checkpoints_total_limit:
+                    num_to_remove = len(checkpoints) - args.checkpoints_total_limit + 1
+                    removing_checkpoints = checkpoints[0:num_to_remove]
+
+                    for removing_checkpoint in removing_checkpoints:
+                        removing_checkpoint = os.path.join(args.output_dir, removing_checkpoint)
+                        shutil.rmtree(removing_checkpoint)
             
             if global_step % args.save_steps == 0:
                 save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")

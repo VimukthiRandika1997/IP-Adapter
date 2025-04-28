@@ -33,4 +33,5 @@ accelerate launch --num_processes 1 --mixed_precision "fp16" \
   --output_dir="output_dir" \
   --num_train_epochs=10 \
   --save_steps=1000 \
+  --checkpoints_total_limit=1 \
   --report_to="wandb"
