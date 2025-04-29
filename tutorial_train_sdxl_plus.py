@@ -348,7 +348,7 @@ def main():
     image_encoder.requires_grad_(False)
     
     #ip-adapter: added
-    num_tokens = 4
+    num_tokens = 16
     image_proj_model = Resampler(
         dim=1280,
         depth=4,
