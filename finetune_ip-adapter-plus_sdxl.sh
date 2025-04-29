@@ -35,4 +35,7 @@ accelerate launch --num_processes 1 --mixed_precision "fp16" \
   --num_train_epochs=10 \
   --save_steps=2000 \
   --checkpoints_total_limit=1 \
+  --push_to_hub \
+  --hub_model_id="ip-adapter-plus_sdxl_test" \
+  --hub_token=$HF_TOKEN \
   --report_to="wandb"
