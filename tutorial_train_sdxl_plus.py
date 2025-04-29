@@ -19,6 +19,7 @@ from accelerate.utils import ProjectConfiguration
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection, CLIPTextModelWithProjection
 
+from ip_adapter.resampler import Resampler
 from ip_adapter.ip_adapter import ImageProjModel
 from ip_adapter.utils import is_torch2_available
 if is_torch2_available():
@@ -346,12 +347,17 @@ def main():
     text_encoder_2.requires_grad_(False)
     image_encoder.requires_grad_(False)
     
-    #ip-adapter
+    #ip-adapter: added
     num_tokens = 4
-    image_proj_model = ImageProjModel(
-        cross_attention_dim=unet.config.cross_attention_dim,
-        clip_embeddings_dim=image_encoder.config.projection_dim,
-        clip_extra_context_tokens=num_tokens,
+    image_proj_model = Resampler(
+        dim=1280,
+        depth=4,
+        dim_head=64,
+        heads=20,
+        num_queries=num_tokens,
+        embedding_dim=image_encoder.config.hidden_size,
+        output_dim=2048,
+        ff_mult=4
     )
     # init adapter modules
     attn_procs = {}
@@ -437,15 +443,16 @@ def main():
                 # (this is the forward diffusion process)
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
             
-                with torch.no_grad():
-                    image_embeds = image_encoder(batch["clip_images"].to(accelerator.device, dtype=weight_dtype)).image_embeds
-                image_embeds_ = []
-                for image_embed, drop_image_embed in zip(image_embeds, batch["drop_image_embeds"]):
+                clip_images = []
+                for clip_image, drop_image_embed in zip(batch["clip_images"], batch["drop_image_embeds"]):
                     if drop_image_embed == 1:
-                        image_embeds_.append(torch.zeros_like(image_embed))
+                        clip_images.append(torch.zeros_like(clip_image))
                     else:
-                        image_embeds_.append(image_embed)
-                image_embeds = torch.stack(image_embeds_)
+                        clip_images.append(clip_image)
+                clip_images = torch.stack(clip_images, dim=0)
+                with torch.no_grad():
+                    image_embeds = image_encoder(clip_images.to(accelerator.device, dtype=weight_dtype),
+                                                output_hidden_states=True).hidden_states[-2]
             
                 with torch.no_grad():
                     encoder_output = text_encoder(batch['text_input_ids'].to(accelerator.device), output_hidden_states=True)
@@ -508,4 +515,4 @@ def main():
     accelerator.save_state(args.output_dir, safe_serialization=False) 
                 
 if __name__ == "__main__":
-    main()    
+    main() 
