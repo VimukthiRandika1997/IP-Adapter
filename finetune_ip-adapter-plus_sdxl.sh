@@ -3,6 +3,7 @@
 ### ** Finetune an IP-adapter model for a specific usecase ** ###
 # data.json => list of dict: [{"image_file": "1.png", "text": "A dog"}]
 # data_root_path => "data/images"
+# VRAM requirements: for training with 1024 image resolution requires roughly 30GB, following script works with this!
 
 # 01. Create required format using hf dataset
 export HF_TOKEN=""
