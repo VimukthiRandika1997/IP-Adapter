@@ -314,7 +314,7 @@ def parse_args():
         default=None,
         help="The name of the repository to keep in sync with the local `output_dir`.",
     )
-    parser.add_argument("--hub_token", action="store_true", help="access token for hf")
+    parser.add_argument("--hub_token", type=str, default=None, help="The token to use to push to the Model Hub.")
     
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
